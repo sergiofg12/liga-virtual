@@ -3,6 +3,7 @@ import streamlit as st
 import pandas as pd
 import easyocr
 from PIL import Image
+import numpy as np
 import os
 import re
 
@@ -14,8 +15,9 @@ if not os.path.exists(DATA_FILE):
 
 reader = easyocr.Reader(['en'], gpu=False)
 
-def extract_stats_from_image(image):
-    text_list = reader.readtext(image, detail=0)
+def extract_stats_from_image(uploaded_image):
+    img_array = np.array(Image.open(uploaded_image))
+    text_list = reader.readtext(img_array, detail=0)
     pattern = re.compile(r"([A-Za-z0-9_.-]+)\s+([6-9]\.\d|\d\.\d)\s+(\d+)\s+(\d+)")
     data = []
     for line in text_list:
