@@ -1,7 +1,7 @@
 
 import streamlit as st
 import pandas as pd
-import pytesseract
+import easyocr
 from PIL import Image
 import os
 import re
@@ -12,11 +12,13 @@ if not os.path.exists(DATA_FILE):
     df_init = pd.DataFrame(columns=["Nombre", "PJ", "Goles", "Asistencias", "CalificacionTotal"])
     df_init.to_csv(DATA_FILE, index=False)
 
+reader = easyocr.Reader(['en'], gpu=False)
+
 def extract_stats_from_image(image):
-    text = pytesseract.image_to_string(image, config='--oem 3 --psm 6')
+    text_list = reader.readtext(image, detail=0)
     pattern = re.compile(r"([A-Za-z0-9_.-]+)\s+([6-9]\.\d|\d\.\d)\s+(\d+)\s+(\d+)")
     data = []
-    for line in text.split('\n'):
+    for line in text_list:
         match = pattern.search(line)
         if match:
             nombre = match.group(1)
@@ -44,14 +46,26 @@ def update_stats(new_data):
             df = pd.concat([df, pd.DataFrame([row])], ignore_index=True)
     df.to_csv(DATA_FILE, index=False)
 
-st.title("⚽ Liga Virtual - Dashboard avanzado" )
+st.markdown("""
+<div style='
+    background: linear-gradient(90deg, #00c6ff, #0072ff);
+    padding: 20px;
+    border-radius: 15px;
+    text-align: center;
+    color: white;
+    font-size: 32px;
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);'>
+    ⚽ Liga Virtual PRO - Dashboard de Estadísticas 🏆
+</div>
+""", unsafe_allow_html=True)
 
 uploaded_file = st.file_uploader("📤 Sube imagen de jornada (FIFA):", type=["png","jpg","jpeg"])
 
 if uploaded_file:
     image = Image.open(uploaded_file)
-    st.image(image, caption="Imagen cargada", use_column_width=True)
-    stats_df = extract_stats_from_image(image)
+    st.image(image, caption="Imagen cargada", use_container_width=True)
+    stats_df = extract_stats_from_image(uploaded_file)
     if not stats_df.empty:
         update_stats(stats_df)
         st.success("¡Estadísticas actualizadas!")
